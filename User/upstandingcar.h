@@ -7,8 +7,8 @@
 
 
 /**********角度控制宏定义**********/									
-#define    CAR_ZERO_ANGLE (-7.5)		 //初始小车车体结构导致小车存在垂直方向不为零角度的情况，固需要消除此误差，增加直立误差角度值。
-// #define    CAR_ZERO_ANGLE (0.0)	
+// #define    CAR_ZERO_ANGLE (-7.5)		 //初始小车车体结构导致小车存在垂直方向不为零角度的情况，固需要消除此误差，增加直立误差角度值。
+#define    CAR_ZERO_ANGLE (0.0)	
 //-13.5
 /******速度控制相关宏定义******/
 #define CAR_POSITION_SET      0
@@ -75,7 +75,6 @@ extern float Tracing_Speed,Tracing_Direction;
 extern void CarStateOut(void);   	//状态机控制车状态
 extern void ProtocolCpyData(void); //复制串口数据
 extern void SendAutoUp(void);
-extern void Send(void);
 extern s32   BST_s32RightMotorPulseSigma;				 //50ms右电机叠加值
 extern s32   BST_s32LeftMotorPulseSigma;				  //50ms左电机叠加值
 extern float BST_fCarPosition;						   //测速码盘通过计算得到的小车位移

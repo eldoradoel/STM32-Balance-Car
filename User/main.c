@@ -15,10 +15,13 @@
 #include "timer.h"
 #include "UltrasonicWave.h"
 //#include "stm32f10x_usart.h"
+#include "usart.h"
 
 float gyz;
 int acc;
 int acc1;
+char mainsend[32];
+uint32_t mainsendcount;
 
 /*协议相关*/
 // extern u8 newLineReceived = 0;
@@ -81,11 +84,11 @@ int main(void)
 
 		if (BST_uart1flag == 1)
 		{
-			//	printf("%f,%f,%f,%f,%f,%f,\n",juli,BST_fCarPosition,BST_fSpeedControlOutNew,BST_fCarAngle,(float)gyro[0],BST_fAngleControlOut);
-			BST_uart1flag = 0;
+			// printf("%f,%f,%f,%f,%f,%f,\n",juli,BST_fCarPosition,BST_fSpeedControlOutNew,BST_fCarAngle,(float)gyro[0],BST_fAngleControlOut);
 			// printf("左电机:%d  右电机：%d \r\n", BST_s32LeftMotorPulseSigma / 2, BST_s32RightMotorPulseSigma / 2);
-			printf("%f,%f,\n", Yaw, ControlCarDoDemoYaw());
-			// printf("%f,%f,\n", BST_fSpeedControlOut, BST_fAngleControlOut);
+			// printf("%f,%f,\n", Yaw, ControlCarDoDemoYaw());
+			// printf("%f,\n", Yaw);
+			BST_uart1flag = 0;
 		}
 		if (newLineReceived)
 		{
@@ -97,7 +100,14 @@ int main(void)
 		// ControlCarDoDemo2();
 
 		/*通过状态控制小车*/
-		CarStateOut();
-		SendAutoUp();
+		mainsendcount++;
+		if (mainsendcount == 500)
+		{
+			snprintf(mainsend, sizeof(mainsend), "%f,%f,\n", ControlCarDoDemoYaw(), ControlCarDoDemoGetDiffAngle());
+			UART3_Send_Char(mainsend);
+			mainsendcount = 0;
+		}
+		// CarStateOut();
+		// SendAutoUp();
 	}
 }

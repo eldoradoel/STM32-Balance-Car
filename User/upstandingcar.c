@@ -71,11 +71,17 @@ float gyro_z;
 float gyrx;
 float gy0;
 
-float BST_fCarAngle_P = 135.0;
-float BST_fCarAngle_D = 0.3;
+// float BST_fCarAngle_P = 135.0;
+// float BST_fCarAngle_D = 0.3;
 
-float BST_fCarSpeed_P = 8.0;
-float BST_fCarSpeed_I = 0.3;
+// float BST_fCarSpeed_P = 8.0;
+// float BST_fCarSpeed_I = 0.3;
+
+float BST_fCarAngle_P = 110.0;
+float BST_fCarAngle_D = 0.25;
+
+float BST_fCarSpeed_P = 5.1;
+float BST_fCarSpeed_I = 0.1;
 
 const double PID_Original[4] = {91.3, 0.21, 5.00, 0.100};
 char alldata[80];
@@ -132,6 +138,7 @@ int Tracing_CountPoor;
 //控制小车正方形运动
 float MPU6050_Zero;
 float SquareLastAngle;
+float DebugControlCarDoDemoGetDiffAngle;
 uint32_t Tracing_MPU6050Count;
 uint8_t SquareEnable;
 uint8_t SquareCountEnable;
@@ -327,10 +334,15 @@ void MotorOutput(void) //电机PWM输出函数
 {
 	//右电机转向PWM控制融合平衡角度、速度输出
 
-	//		BST_fLeftMotorOut  = BST_fAngleControlOut +BST_fSpeedControlOutNew + BST_fBluetoothDirectionNew+Direction;//+directionl - BST_fBluetoothDirectionNew;			//左电机转向PWM控制融合平衡角度、速度输出
-	//    BST_fRightMotorOut = BST_fAngleControlOut +BST_fSpeedControlOutNew - BST_fBluetoothDirectionNew-Direction;//-directionl+ BST_fBluetoothDirectionNew;			//右电机转向PWM控制融合平衡角度、速度输出
+	// BST_fLeftMotorOut = BST_fAngleControlOut + BST_fSpeedControlOutNew + BST_fBluetoothDirectionNew + Direction + Tracing_Direction;  //+directionl - BST_fBluetoothDirectionNew;			//左电机转向PWM控制融合平衡角度、速度输出
+	// BST_fRightMotorOut = BST_fAngleControlOut + BST_fSpeedControlOutNew - BST_fBluetoothDirectionNew - Direction - Tracing_Direction; //-directionl+ BST_fBluetoothDirectionNew;			//右电机转向PWM控制融合平衡角度、速度输出
+
+	// BST_fLeftMotorOut = 1000;
+	// BST_fRightMotorOut = 1000;
+
+	
 	BST_fLeftMotorOut = BST_fAngleControlOut + BST_fSpeedControlOutNew + BST_fBluetoothDirectionNew + Direction + Tracing_Direction;  //+directionl - BST_fBluetoothDirectionNew;			//左电机转向PWM控制融合平衡角度、速度输出
-	BST_fRightMotorOut = BST_fAngleControlOut + BST_fSpeedControlOutNew - BST_fBluetoothDirectionNew - Direction - Tracing_Direction; //-directionl+ BST_fBluetoothDirectionNew;			//右电机转向PWM控制融合平衡角度、速度输出
+	BST_fRightMotorOut = BST_fAngleControlOut + BST_fSpeedControlOutNew - BST_fBluetoothDirectionNew - Direction; //-directionl+ BST_fBluetoothDirectionNew;			//右电机转向PWM控制融合平衡角度、速度输出
 
 	if ((s16)BST_fLeftMotorOut > MOTOR_OUT_MAX)
 		BST_fLeftMotorOut = MOTOR_OUT_MAX;
@@ -629,12 +641,6 @@ void SendAutoUp(void)
 	}
 	if (g_uptimes == 0)
 		g_uptimes = 5000;
-}
-void Send(void)
-{
-
-	CalcUpData();
-	UART3_Send_Char(updata); //返回协议数据包
 }
 
 int StringFind(const char *pSrc, const char *pDst)
@@ -939,18 +945,23 @@ void Protocol(void)
 void SysTick_Handler_ForUpstandingCar()
 {
 	if (!SquareEnable)
-	{
-		UpdateCountNum(3000);
+	{	//收集6050转向角的初始数据，数据稳定需要很长时间
+		UpdateCountNum(3500);
 		if (TimeToChangeNextStatus())
 		{
 			SquareEnable = 1;
 			MPU6050_Zero = Yaw;
 		}
 	}
+	else
+	{
+		//6050运行时间计数
+		Tracing_MPU6050Count++;
+	}
 	if (SquareCountEnable)
 	{
+		//延迟池总计数
 		Tracing_Count++;
-		Tracing_MPU6050Count++;
 	}
 }
 
@@ -958,21 +969,23 @@ void ControlCarDoDemo1(void)
 {
 	if (SquareEnable)
 	{
+		//转向结束后状态延迟
 		if (SquareStraight == 0 && SquareTurn == 0)
 		{
-			UpdateCountNum(50);
+			UpdateCountNum(400);
 			SquareLastAngle = ControlCarDoDemoYaw();
 			if (TimeToChangeNextStatus())
 			{
 				SquareStraight = 1;
 			}
 		}
+		//直走
 		if (SquareStraight == 1 && SquareTurn == 0)
 		{
 			SquareReadyToStraight = 0;
+			SquareLastAngle = ControlCarDoDemoYaw();
 			if (SquareReadyToTurn)
 			{
-				SquareLastAngle = ControlCarDoDemoYaw();
 				if (TimeToChangeNextStatus())
 				{
 					SquareStraight = 0;
@@ -981,16 +994,17 @@ void ControlCarDoDemo1(void)
 			}
 			else
 			{
-				UpdateCountNum(100);
+				UpdateCountNum(70);
 				ChangeCarToStraight();
 				if (TimeToChangeNextStatus())
 				{
 					ChangeCarToStop();
-					UpdateCountNum(200);
+					UpdateCountNum(400);
 					SquareReadyToTurn = 1;
 				}
 			}
 		}
+		//转弯
 		if (SquareStraight == 0 && SquareTurn == 1)
 		{
 			SquareReadyToTurn = 0;
@@ -1009,7 +1023,7 @@ void ControlCarDoDemo1(void)
 				{
 					SquareReadyToStraight = 1;
 					ChangeCarToStop();
-					UpdateCountNum(50);
+					UpdateCountNum(400);
 				}
 				else
 				{
@@ -1022,15 +1036,15 @@ void ControlCarDoDemo1(void)
 
 float ControlCarDoDemoYaw()
 {
-	return Yaw - MPU6050_Zero + (0.000021 * Tracing_MPU6050Count * 0.005);
+	return Yaw - MPU6050_Zero + (0.000023 * Tracing_MPU6050Count * 0.005);
 }
 
 float ControlCarDoDemoGetDiffAngle()
 {
 	float nowpositionangle = ControlCarDoDemoYaw();
-	if (SquareLastAngle > 0)
+	if (SquareLastAngle > 0.0)
 	{
-		if (nowpositionangle > 0)
+		if (nowpositionangle > 0.0)
 		{
 			return fabsf(nowpositionangle - SquareLastAngle);
 		}
@@ -1041,9 +1055,9 @@ float ControlCarDoDemoGetDiffAngle()
 	}
 	else
 	{
-		if (nowpositionangle > 0)
+		if (nowpositionangle > 0.0)
 		{
-			return nowpositionangle - SquareLastAngle;
+			return 360.0 - nowpositionangle + SquareLastAngle;
 		}
 		else
 		{
@@ -1061,7 +1075,7 @@ void ChangeCarToStraight()
 void ChangeCarToTurn()
 {
 	Tracing_Speed = 0;
-	Tracing_Direction = 200;
+	Tracing_Direction = 400;
 }
 
 void ChangeCarToStop()
@@ -1143,7 +1157,7 @@ void ControlCarDoDemo2()
 			{
 				UpdateCountNum(210);
 				ChangeCarToTurn();
-				if(TimeToChangeNextStatus())
+				if (TimeToChangeNextStatus())
 				{
 					ChangeCarToStop();
 					SquareReadyToStraight = 1;
