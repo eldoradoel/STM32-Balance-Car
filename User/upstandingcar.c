@@ -30,15 +30,14 @@ enum
 	enTRIGHT
 } enCarState;
 
-#define run_car '1'	  //按键前
-#define back_car '2'  //按键后
-#define left_car '3'  //按键左
-#define right_car '4' //按键右
-#define stop_car '0'  //按键停
+#define run_car '1'	  // 按键前
+#define back_car '2'  // 按键后
+#define left_car '3'  // 按键左
+#define right_car '4' // 按键右
+#define stop_car '0'  // 按键停
 
 int g_newcarstate = enSTOP; //  1前2后3左4右0停止
 
-int Direction;
 char returntemp[] = "$0,0,0,0,0,0,0,0,0,0,0,0cm,8.2V#";
 char piddisplay[50] = "$AP";
 char manydisplay[80] = {0};
@@ -46,60 +45,54 @@ char updata[80] = {0};
 
 /*****************多数据************************/
 
-u8 BST_u8MainEventCount;	//主循环判断计数  在SysTick_Handler(void)中使用 每1ms加1
-u8 BST_u8SpeedControlCount; //速度控制循环计数  在SysTick_Handler(void)中使用 每5ms加1
+u8 BST_u8MainEventCount;	// 主循环判断计数  在SysTick_Handler(void)中使用 每1ms加1
+u8 BST_u8SpeedControlCount; // 速度控制循环计数  在SysTick_Handler(void)中使用 每5ms加1
 u8 BST_u8SpeedControlPeriod;
 u8 BST_u8DirectionControlPeriod;
-u8 BST_u8DirectionControlCount; //转向控制循环计数  在SysTick_Handler(void)中使用 每5ms加1
+u8 BST_u8DirectionControlCount; // 转向控制循环计数  在SysTick_Handler(void)中使用 每5ms加1
 u8 BST_u8trig;
 u8 BST_uart1flag;
-u8 ucBluetoothValue; //蓝牙接收数据
+u8 ucBluetoothValue; // 蓝牙接收数据
 int BST_speedtime;
 int Speedset = 100;
 float volt = 12.0;
 
 /******电机控制参数******/
-float BST_fSpeedControlOut; //速度控制PWM
+float BST_fSpeedControlOut; // 速度控制PWM
 float BST_fSpeedControlOutOld;
 float BST_fSpeedControlOutNew;
 float BST_fAngleControlOut;
 float BST_fLeftMotorOut;
 float BST_fRightMotorOut;
 
-float BST_fCarAngle; //角度控制PWM
+float BST_fCarAngle; // 角度控制PWM
 float gyro_z;
 float gyrx;
 float gy0;
 
-// float BST_fCarAngle_P = 135.0;
-// float BST_fCarAngle_D = 0.3;
+float BST_fCarAngle_P = 130.0;
+float BST_fCarAngle_D = 0.28;
 
-// float BST_fCarSpeed_P = 8.0;
-// float BST_fCarSpeed_I = 0.3;
-
-float BST_fCarAngle_P = 110.0;
-float BST_fCarAngle_D = 0.25;
-
-float BST_fCarSpeed_P = 5.1;
-float BST_fCarSpeed_I = 0.1;
+float BST_fCarSpeed_P = 8.0;
+float BST_fCarSpeed_I = 0.2;
 
 const double PID_Original[4] = {91.3, 0.21, 5.00, 0.100};
 char alldata[80];
 char *iap;
 
 /******速度控制参数******/
-s16 BST_s16LeftMotorPulse;	//左电机脉冲数
-s16 BST_s16RightMotorPulse; //右电机脉冲数
+s16 BST_s16LeftMotorPulse;	// 左电机脉冲数
+s16 BST_s16RightMotorPulse; // 右电机脉冲数
 
 s32 BST_s32LeftMotorPulseOld;
 s32 BST_s32RightMotorPulseOld;
 s32 BST_s32LeftMotorPulseSigma;	 // 50ms左电机叠加值
 s32 BST_s32RightMotorPulseSigma; // 50ms右电机叠加值
 
-float BST_fCarSpeed; //测速码盘得出的车速
+float BST_fCarSpeed; // 测速码盘得出的车速
 float BST_fCarSpeedOld;
 
-float BST_fCarPosition; //测速码盘通过计算得到的小车位移
+float BST_fCarPosition; // 测速码盘通过计算得到的小车位移
 
 /*-----悬停参数-----*/
 int leftstop = 0;
@@ -108,44 +101,47 @@ int stopflag = 0;
 
 /******超声波********/
 
-float fchaoshengbo = 0; //超声波输出量
-float juli = 0;			//超声波距离
+float fchaoshengbo = 0; // 超声波输出量
+float juli = 0;			// 超声波距离
 
 /******蓝牙控制参数******/
-float BST_fBluetoothSpeed;		  //蓝牙控制车速
-float BST_fBluetoothDirectionNew; //用于平缓输出车速使用
-float BST_fBluetoothDirectionSL;  //左转标志位  由于PWM转向输出使用判断输出方式 固需要标志位
-float BST_fBluetoothDirectionSR;  //右转标志位	  由于PWM转向输出使用判断输出方式 固需要标志位
+float BST_fBluetoothSpeed;		  // 蓝牙控制车速
+float BST_fBluetoothDirectionNew; // 用于平缓输出车速使用
+float BST_fBluetoothDirectionSL;  // 左转标志位  由于PWM转向输出使用判断输出方式 固需要标志位
+float BST_fBluetoothDirectionSR;  // 右转标志位	  由于PWM转向输出使用判断输出方式 固需要标志位
 int chaoflag = 0;
 int x, y1, z1, y2, z2, flagbt;
 int g_autoup = 0;
-int g_uptimes = 5000; //自动上报间隔
+int g_uptimes = 5000; // 自动上报间隔
 char charkp[10], charkd[10], charksp[10], charksi[10];
 char lspeed[10], rspeed[10], daccel[10], dgyro[10], csb[10], vi[10];
 char kp, kd, ksp, ksi;
 float dac = 0, dgy = 0;
 
 /************旋转*****************/
-float BST_fBluetoothDirectionL; //左旋转标志位  由于PWM旋转输出使用判断输出方式 固需要标志位
-float BST_fBluetoothDirectionR; //右旋转标志位  由于PWM旋转输出使用判断输出方式 固需要标志位
+float BST_fBluetoothDirectionL; // 左旋转标志位  由于PWM旋转输出使用判断输出方式 固需要标志位
+float BST_fBluetoothDirectionR; // 右旋转标志位  由于PWM旋转输出使用判断输出方式 固需要标志位
 int driectionxco = 150;
 
 /************循迹**************/
 float Tracing_Speed;
 float Tracing_Direction;
-int Tracing_Count;
-int Tracing_CountPoor;
-//控制小车正方形运动
+uint32_t Tracing_Count;
+uint32_t Tracing_CountPoor;
+// 控制小车正方形运动
 float MPU6050_Zero;
 float SquareLastAngle;
 float DebugControlCarDoDemoGetDiffAngle;
 uint32_t Tracing_MPU6050Count;
+uint32_t Tracing_SpeedPoor;
 uint8_t SquareEnable;
 uint8_t SquareCountEnable;
 uint8_t SquareStraight;
 uint8_t SquareTurn;
 uint8_t SquareReadyToTurn;
 uint8_t SquareReadyToStraight;
+uint8_t SquareReadyToStop;
+
 // float DebugControlCarDoDemoGetDiffAngle;
 
 //******卡尔曼参数************
@@ -169,7 +165,7 @@ void delay_nms(u16 time)
 	u16 i = 0;
 	while (time--)
 	{
-		i = 12000; //自己定义
+		i = 12000; // 自己定义
 		while (i--)
 			;
 	}
@@ -184,24 +180,24 @@ void delay_nms(u16 time)
 void CarUpstandInit(void)
 {
 
-	BST_s16LeftMotorPulse = BST_s16RightMotorPulse = 0;			  //左右脉冲值   初始化
-	BST_s32LeftMotorPulseSigma = BST_s32RightMotorPulseSigma = 0; //叠加脉冲数	 初始化
+	BST_s16LeftMotorPulse = BST_s16RightMotorPulse = 0;			  // 左右脉冲值   初始化
+	BST_s32LeftMotorPulseSigma = BST_s32RightMotorPulseSigma = 0; // 叠加脉冲数	 初始化
 
-	BST_fCarSpeed = BST_fCarSpeedOld = 0; //平衡小车车速	初始化
-	BST_fCarPosition = 0;				  //平衡小车位移量	初始化
-	BST_fCarAngle = 0;					  //平衡小车车速	初始化
+	BST_fCarSpeed = BST_fCarSpeedOld = 0; // 平衡小车车速	初始化
+	BST_fCarPosition = 0;				  // 平衡小车位移量	初始化
+	BST_fCarAngle = 0;					  // 平衡小车车速	初始化
 
-	BST_fAngleControlOut = BST_fSpeedControlOut = BST_fBluetoothDirectionNew = 0; //角度PWM、车速PWM、蓝牙控制PWM	 初始化
-	BST_fLeftMotorOut = BST_fRightMotorOut = 0;									  //左右车轮PWM输出值 			 初始化
-	BST_fBluetoothSpeed = 0;													  //蓝牙控制车速值                 初始化
-	BST_fBluetoothDirectionL = BST_fBluetoothDirectionR = 0;					  //蓝牙控制左右旋转标志位         初始化
-	BST_fBluetoothDirectionSL = BST_fBluetoothDirectionSR = 0;					  //蓝牙控制左右转向标志位         初始化
+	BST_fAngleControlOut = BST_fSpeedControlOut = BST_fBluetoothDirectionNew = 0; // 角度PWM、车速PWM、蓝牙控制PWM	 初始化
+	BST_fLeftMotorOut = BST_fRightMotorOut = 0;									  // 左右车轮PWM输出值 			 初始化
+	BST_fBluetoothSpeed = 0;													  // 蓝牙控制车速值                 初始化
+	BST_fBluetoothDirectionL = BST_fBluetoothDirectionR = 0;					  // 蓝牙控制左右旋转标志位         初始化
+	BST_fBluetoothDirectionSL = BST_fBluetoothDirectionSR = 0;					  // 蓝牙控制左右转向标志位         初始化
 
-	BST_u8MainEventCount = 0;	  //用于5ms定时器子程序SysTick_Handler(void)中总中断计数位
-	BST_u8SpeedControlCount = 0;  //用于5ms定时器子程序SysTick_Handler(void)中50ms速度平衡融入计数位
-	BST_u8SpeedControlPeriod = 0; //用于5ms定时器子程序SysTick_Handler(void)中50ms速度平衡融入计数位
+	BST_u8MainEventCount = 0;	  // 用于5ms定时器子程序SysTick_Handler(void)中总中断计数位
+	BST_u8SpeedControlCount = 0;  // 用于5ms定时器子程序SysTick_Handler(void)中50ms速度平衡融入计数位
+	BST_u8SpeedControlPeriod = 0; // 用于5ms定时器子程序SysTick_Handler(void)中50ms速度平衡融入计数位
 
-	fchaoshengbo = 0; //用于5ms定时器子程序SysTick_Handler(void)中超声波平衡融入计数位
+	fchaoshengbo = 0; // 用于5ms定时器子程序SysTick_Handler(void)中超声波平衡融入计数位
 }
 
 void ResetPID()
@@ -254,7 +250,7 @@ void AngleControl(void)
 	} // MPU6050状态正常时LED灯熄灭
 
 	BST_fCarAngle = Roll - CAR_ZERO_ANGLE;												// DMP ROLL滚动方向角度与预设小车倾斜角度值的差得出角度
-	BST_fAngleControlOut = BST_fCarAngle * BST_fCarAngle_P + gyro[0] * BST_fCarAngle_D; //角度PD控制
+	BST_fAngleControlOut = BST_fCarAngle * BST_fCarAngle_P + gyro[0] * BST_fCarAngle_D; // 角度PD控制
 }
 
 /***************************************************************
@@ -267,7 +263,7 @@ void SetMotorVoltageAndDirection(s16 s16LeftVoltage, s16 s16RightVoltage)
 	u16 u16LeftMotorValue;
 	u16 u16RightMotorValue;
 
-	if (s16LeftVoltage < 0) //当左电机PWM输出为负时 PB14设为正 PB15设为负 （PB14 15 分别控制TB6612fng驱动芯片，逻辑0 1可控制左电机正转反转）
+	if (s16LeftVoltage < 0) // 当左电机PWM输出为负时 PB14设为正 PB15设为负 （PB14 15 分别控制TB6612fng驱动芯片，逻辑0 1可控制左电机正转反转）
 	{
 		GPIO_SetBits(GPIOB, GPIO_Pin_14);
 		GPIO_ResetBits(GPIOB, GPIO_Pin_15);
@@ -275,18 +271,18 @@ void SetMotorVoltageAndDirection(s16 s16LeftVoltage, s16 s16RightVoltage)
 	}
 	else
 	{
-		GPIO_SetBits(GPIOB, GPIO_Pin_15); //当左电机PWM输出为正时 PB14设为负 PB15设为正 （PB14 15 分别控制TB6612fng驱动芯片，逻辑0 1可控制左电机正转反转）
+		GPIO_SetBits(GPIOB, GPIO_Pin_15); // 当左电机PWM输出为正时 PB14设为负 PB15设为正 （PB14 15 分别控制TB6612fng驱动芯片，逻辑0 1可控制左电机正转反转）
 		GPIO_ResetBits(GPIOB, GPIO_Pin_14);
 		s16LeftVoltage = s16LeftVoltage;
 	}
 
 	if (s16RightVoltage < 0)
-	{ //当右电机PWM输出为负时 PB12设为正 PB13设为负 （PB12 13 分别控制TB6612fng驱动芯片，逻辑0 1可控制左电机正转反转）
+	{ // 当右电机PWM输出为负时 PB12设为正 PB13设为负 （PB12 13 分别控制TB6612fng驱动芯片，逻辑0 1可控制左电机正转反转）
 		GPIO_SetBits(GPIOB, GPIO_Pin_13);
 		GPIO_ResetBits(GPIOB, GPIO_Pin_12);
 		s16RightVoltage = (-s16RightVoltage);
 	}
-	else //当右电机PWM输出为正时 PB12设为负 PB13设为正 （PB12 13 分别控制TB6612fng驱动芯片，逻辑0 1可控制左电机正转反转）
+	else // 当右电机PWM输出为正时 PB12设为负 PB13设为正 （PB12 13 分别控制TB6612fng驱动芯片，逻辑0 1可控制左电机正转反转）
 	{
 		GPIO_SetBits(GPIOB, GPIO_Pin_12);
 		GPIO_ResetBits(GPIOB, GPIO_Pin_13);
@@ -330,19 +326,15 @@ void SetMotorVoltageAndDirection(s16 s16LeftVoltage, s16 s16RightVoltage)
 			 入死区常量，对输出饱和作出处理。
 
 ***************************************************************/
-void MotorOutput(void) //电机PWM输出函数
+void MotorOutput(void) // 电机PWM输出函数
 {
-	//右电机转向PWM控制融合平衡角度、速度输出
+	// 右电机转向PWM控制融合平衡角度、速度输出
 
-	// BST_fLeftMotorOut = BST_fAngleControlOut + BST_fSpeedControlOutNew + BST_fBluetoothDirectionNew + Direction + Tracing_Direction;  //+directionl - BST_fBluetoothDirectionNew;			//左电机转向PWM控制融合平衡角度、速度输出
-	// BST_fRightMotorOut = BST_fAngleControlOut + BST_fSpeedControlOutNew - BST_fBluetoothDirectionNew - Direction - Tracing_Direction; //-directionl+ BST_fBluetoothDirectionNew;			//右电机转向PWM控制融合平衡角度、速度输出
+	BST_fLeftMotorOut = BST_fAngleControlOut + BST_fSpeedControlOutNew + BST_fBluetoothDirectionNew + Tracing_Speed * 1.02 + Tracing_Direction *1.02; //+directionl - BST_fBluetoothDirectionNew;			//左电机转向PWM控制融合平衡角度、速度输出
+	BST_fRightMotorOut = BST_fAngleControlOut + BST_fSpeedControlOutNew - BST_fBluetoothDirectionNew + Tracing_Speed - Tracing_Direction;			   //-directionl+ BST_fBluetoothDirectionNew;			//右电机转向PWM控制融合平衡角度、速度输出
 
 	// BST_fLeftMotorOut = 1000;
 	// BST_fRightMotorOut = 1000;
-
-	
-	BST_fLeftMotorOut = BST_fAngleControlOut + BST_fSpeedControlOutNew + BST_fBluetoothDirectionNew + Direction + Tracing_Direction;  //+directionl - BST_fBluetoothDirectionNew;			//左电机转向PWM控制融合平衡角度、速度输出
-	BST_fRightMotorOut = BST_fAngleControlOut + BST_fSpeedControlOutNew - BST_fBluetoothDirectionNew - Direction; //-directionl+ BST_fBluetoothDirectionNew;			//右电机转向PWM控制融合平衡角度、速度输出
 
 	if ((s16)BST_fLeftMotorOut > MOTOR_OUT_MAX)
 		BST_fLeftMotorOut = MOTOR_OUT_MAX;
@@ -356,7 +348,7 @@ void MotorOutput(void) //电机PWM输出函数
 	SetMotorVoltageAndDirection((s16)BST_fLeftMotorOut, (s16)BST_fRightMotorOut);
 }
 
-void GetMotorPulse(void) //采集电机速度脉冲
+void GetMotorPulse(void) // 采集电机速度脉冲
 {
 	//////////////////////////////////此部分为外部中断计算脉冲/////////////////////////////////////
 	uint16_t u16TempLeft;
@@ -371,8 +363,8 @@ void GetMotorPulse(void) //采集电机速度脉冲
 	BST_s16LeftMotorPulse = u16TempLeft;
 	BST_s16RightMotorPulse = (-u16TempRight);
 
-	BST_s32LeftMotorPulseSigma += BST_s16LeftMotorPulse;   //脉冲值叠加 40ms叠加值
-	BST_s32RightMotorPulseSigma += BST_s16RightMotorPulse; //脉冲值叠加 40ms叠加值
+	BST_s32LeftMotorPulseSigma += BST_s16LeftMotorPulse;   // 脉冲值叠加 40ms叠加值
+	BST_s32RightMotorPulseSigma += BST_s16RightMotorPulse; // 脉冲值叠加 40ms叠加值
 }
 /***************************************************************
 ** 函数名称: SpeedControl
@@ -383,22 +375,22 @@ void SpeedControl(void)
 {
 
 	BST_fCarSpeed = (BST_s32LeftMotorPulseSigma + BST_s32RightMotorPulseSigma); // * 0.5 ;		  //左右电机脉冲数平均值作为小车当前车速
-	BST_s32LeftMotorPulseSigma = BST_s32RightMotorPulseSigma = 0;				//全局变量 注意及时清零
+	BST_s32LeftMotorPulseSigma = BST_s32RightMotorPulseSigma = 0;				// 全局变量 注意及时清零
 	BST_fCarSpeedOld *= 0.7;
 	BST_fCarSpeedOld += BST_fCarSpeed * 0.3;
 
-	BST_fCarPosition += BST_fCarSpeedOld;	 //路程  即速度积分	   1/11 3:03
-	BST_fCarPosition += BST_fBluetoothSpeed; //融合蓝牙给定速度
-	BST_fCarPosition += fchaoshengbo;		 //融合超声波给定速度
+	BST_fCarPosition += BST_fCarSpeedOld;	 // 路程  即速度积分	   1/11 3:03
+	BST_fCarPosition += BST_fBluetoothSpeed; // 融合蓝牙给定速度
+	BST_fCarPosition += fchaoshengbo;		 // 融合超声波给定速度
 
-	BST_fCarPosition += Tracing_Speed; //融合循迹给定速度
+	BST_fCarPosition += Tracing_Speed; // 融合循迹给定速度
 
 	if (stopflag == 1)
 	{
 		BST_fCarPosition = 0;
 	}
 
-	//积分上限设限//
+	// 积分上限设限//
 	if ((s32)BST_fCarPosition > CAR_POSITION_MAX)
 		BST_fCarPosition = CAR_POSITION_MAX;
 	if ((s32)BST_fCarPosition < CAR_POSITION_MIN)
@@ -415,7 +407,7 @@ void SpeedControl(void)
 		BST_fCarSpeed_I = (z2 - 192) * 0.15625;
 	}
 
-	BST_fSpeedControlOutNew = (BST_fCarSpeedOld - CAR_SPEED_SET) * BST_fCarSpeed_P + (BST_fCarPosition - CAR_POSITION_SET) * BST_fCarSpeed_I; //速度PI算法 速度*P +位移*I=速度PWM输出
+	BST_fSpeedControlOutNew = (BST_fCarSpeedOld - CAR_SPEED_SET) * BST_fCarSpeed_P + (BST_fCarPosition - CAR_POSITION_SET) * BST_fCarSpeed_I; // 速度PI算法 速度*P +位移*I=速度PWM输出
 }
 
 /***************************************************************
@@ -458,9 +450,9 @@ void USART3_IRQHandler(void)
 {
 	u8 uartvalue = 0;
 
-	if (USART_GetFlagStatus(USART3, USART_FLAG_ORE) != RESET) //注意！不能使用if(USART_GetITStatus(USART1, USART_IT_RXNE) != RESET)来判断
+	if (USART_GetFlagStatus(USART3, USART_FLAG_ORE) != RESET) // 注意！不能使用if(USART_GetITStatus(USART1, USART_IT_RXNE) != RESET)来判断
 	{
-		USART_ClearFlag(USART3, USART_FLAG_ORE); //读SR其实就是清除标志
+		USART_ClearFlag(USART3, USART_FLAG_ORE); // 读SR其实就是清除标志
 		USART_ReceiveData(USART3);
 	}
 
@@ -503,23 +495,23 @@ void chaoshengbo(void)
 
 		juli = TIM_GetCounter(TIM1) * 5 * 34.0 / 200.0;
 
-		if (juli <= 4.00) //判断若距离小于4cm，小车输出向后PWM值。
+		if (juli <= 4.00) // 判断若距离小于4cm，小车输出向后PWM值。
 		{
-			// fchaoshengbo = (-300);
+			fchaoshengbo = (-300);
 		}
-		else if (juli >= 5 && juli <= 8.0) //判断若距离大于5cm，小于8cm，小车输出向前PWM值。
+		else if (juli >= 5 && juli <= 8.0) // 判断若距离大于5cm，小于8cm，小车输出向前PWM值。
 		{
-			// fchaoshengbo = 500;
+			fchaoshengbo = 500;
 		}
 		else
 		{
-			fchaoshengbo = 0; //距离大于4cm ，超声波PWM输出为0
+			fchaoshengbo = 0; // 距离大于4cm ，超声波PWM输出为0
 		}
 	}
 
-	//寄生此上报数据
-	//增加自动上报  10ms进一次，故10*50ms = 500ms
-	// SendAutoUp();
+	// 寄生此上报数据
+	// 增加自动上报  10ms进一次，故10*50ms = 500ms
+	//  SendAutoUp();
 }
 
 /*计算上报的数据*/
@@ -637,7 +629,7 @@ void SendAutoUp(void)
 	if ((g_autoup == 1) && (g_uptimes == 0))
 	{
 		CalcUpData();
-		UART3_Send_Char(updata); //返回协议数据包
+		UART3_Send_Char(updata); // 返回协议数据包
 	}
 	if (g_uptimes == 0)
 		g_uptimes = 5000;
@@ -667,7 +659,7 @@ void CarStateOut(void)
 {
 	switch (g_newcarstate)
 	{
-	case enSTOP: //停止
+	case enSTOP: // 停止
 	{
 
 		BST_fBluetoothSpeed = 0;
@@ -677,7 +669,7 @@ void CarStateOut(void)
 	}
 	break;
 
-	case enRUN: //向前速度 800
+	case enRUN: // 向前速度 800
 	{
 		BST_fBluetoothDirectionNew = 0;
 		// BST_fSpeedControlOutNew=0;
@@ -686,7 +678,7 @@ void CarStateOut(void)
 	}
 	break;
 
-	case enLEFT: //左转
+	case enLEFT: // 左转
 	{
 
 		BST_fBluetoothDirectionNew = -150;
@@ -694,7 +686,7 @@ void CarStateOut(void)
 	}
 	break;
 
-	case enRIGHT: //右转
+	case enRIGHT: // 右转
 	{
 
 		BST_fBluetoothDirectionNew = 150;
@@ -702,7 +694,7 @@ void CarStateOut(void)
 	}
 	break;
 
-	case enBACK: //后退速度 -800
+	case enBACK: // 后退速度 -800
 	{
 		BST_fBluetoothDirectionNew = 0;
 		// BST_fSpeedControlOutNew=0;
@@ -711,13 +703,13 @@ void CarStateOut(void)
 	}
 	break;
 
-	case enTLEFT: //左旋
+	case enTLEFT: // 左旋
 	{
 		BST_fBluetoothDirectionNew = -driectionxco;
 		chaoflag = 1;
 	}
 	break;
-	case enTRIGHT: //右旋
+	case enTRIGHT: // 右旋
 	{
 		BST_fBluetoothDirectionNew = driectionxco;
 		chaoflag = 1;
@@ -726,7 +718,7 @@ void CarStateOut(void)
 
 	default:
 		BST_fBluetoothSpeed = 0;
-		break; //停止
+		break; // 停止
 	}
 }
 
@@ -741,7 +733,7 @@ void ProtocolGetPID(void)
 	}
 	else
 	{
-		UART3_Send_Char("$GetPIDError#"); //返回协议数据包
+		UART3_Send_Char("$GetPIDError#"); // 返回协议数据包
 		return;
 	}
 
@@ -751,7 +743,7 @@ void ProtocolGetPID(void)
 	}
 	else
 	{
-		UART3_Send_Char("$GetPIDError#"); //返回协议数据包
+		UART3_Send_Char("$GetPIDError#"); // 返回协议数据包
 		return;
 	}
 
@@ -761,7 +753,7 @@ void ProtocolGetPID(void)
 	}
 	else
 	{
-		UART3_Send_Char("$GetPIDError#"); //返回协议数据包
+		UART3_Send_Char("$GetPIDError#"); // 返回协议数据包
 		return;
 	}
 
@@ -771,7 +763,7 @@ void ProtocolGetPID(void)
 	}
 	else
 	{
-		UART3_Send_Char("$GetPIDError#"); //返回协议数据包
+		UART3_Send_Char("$GetPIDError#"); // 返回协议数据包
 		return;
 	}
 
@@ -784,7 +776,7 @@ void ProtocolGetPID(void)
 	strcat(piddisplay, charksi);
 	strcat(piddisplay, "#");
 
-	UART3_Send_Char(piddisplay); //返回协议数据包
+	UART3_Send_Char(piddisplay); // 返回协议数据包
 }
 
 void ProtocolCpyData(void)
@@ -799,7 +791,7 @@ void Protocol(void)
 {
 	// USART_ITConfig(USART3, USART_IT_RXNE, DISABLE);//禁能接收中断
 
-	//判断数据包有效性
+	// 判断数据包有效性
 
 	switch (ProtocolString[1])
 	{
@@ -834,46 +826,46 @@ void Protocol(void)
 		newLineReceived = 0;
 		memset(ProtocolString, 0x00, sizeof(ProtocolString));
 		// USART_ITConfig(USART3, USART_IT_RXNE, ENABLE);//使能接收中断
-		UART3_Send_Char("$ReceivePackError#"); //返回协议数据包
+		UART3_Send_Char("$ReceivePackError#"); // 返回协议数据包
 		return;
 	}
 
-	if (ProtocolString[3] == '1') //左摇
+	if (ProtocolString[3] == '1') // 左摇
 	{
 		g_newcarstate = enTLEFT;
-		UART3_Send_Char(returntemp); //返回协议数据包
+		UART3_Send_Char(returntemp); // 返回协议数据包
 	}
 
-	if (ProtocolString[3] == '2') //右摇
+	if (ProtocolString[3] == '2') // 右摇
 	{
 		g_newcarstate = enTRIGHT;
-		UART3_Send_Char(returntemp); //返回协议数据包
+		UART3_Send_Char(returntemp); // 返回协议数据包
 	}
 
-	//查询PID
+	// 查询PID
 	if (ProtocolString[5] == '1')
 	{
 		ProtocolGetPID();
 	}
-	else if (ProtocolString[5] == '2') //恢复默认PID
+	else if (ProtocolString[5] == '2') // 恢复默认PID
 	{
 		ResetPID();
-		UART3_Send_Char("$OK#"); //返回协议数据包
+		UART3_Send_Char("$OK#"); // 返回协议数据包
 	}
 
-	//自动上报
+	// 自动上报
 	if (ProtocolString[7] == '1')
 	{
 		g_autoup = 1;
-		UART3_Send_Char("$OK#"); //返回协议数据包
+		UART3_Send_Char("$OK#"); // 返回协议数据包
 	}
 	else if (ProtocolString[7] == '2')
 	{
 		g_autoup = 0;
-		UART3_Send_Char("$OK#"); //返回协议数据包
+		UART3_Send_Char("$OK#"); // 返回协议数据包
 	}
 
-	if (ProtocolString[9] == '1') //角度环更新 $0,0,0,0,1,1,AP23.54,AD85.45,VP10.78,VI0.26#
+	if (ProtocolString[9] == '1') // 角度环更新 $0,0,0,0,1,1,AP23.54,AD85.45,VP10.78,VI0.26#
 	{
 		//$0,0,0,0,1,1,AP23.54,AD85.45,VP10.78,VI0.26#
 
@@ -895,7 +887,7 @@ void Protocol(void)
 		BST_fCarAngle_P = atof(apvalue);
 
 		memset(apad, 0x00, sizeof(apad));
-		memcpy(apad, ProtocolString + pos + z + 1, int9num - (pos + z)); //存储AD后面的数据
+		memcpy(apad, ProtocolString + pos + z + 1, int9num - (pos + z)); // 存储AD后面的数据
 		z = StringFind(apad, ",");
 		if (z == -1)
 			return;
@@ -903,7 +895,7 @@ void Protocol(void)
 
 		BST_fCarAngle_D = atof(advalue);
 
-		UART3_Send_Char("$OK#"); //返回协议数据包
+		UART3_Send_Char("$OK#"); // 返回协议数据包
 	}
 
 	if (ProtocolString[11] == '1')
@@ -926,7 +918,7 @@ void Protocol(void)
 		BST_fCarSpeed_P = atof(vpvalue);
 
 		memset(vpvi, 0x00, sizeof(vpvi));
-		memcpy(vpvi, ProtocolString + pos + z + 1, int9num - (pos + z)); //存储AD后面的数据
+		memcpy(vpvi, ProtocolString + pos + z + 1, int9num - (pos + z)); // 存储AD后面的数据
 		z = StringFind(vpvi, "#");
 		if (z == -1)
 			return;
@@ -934,7 +926,7 @@ void Protocol(void)
 
 		BST_fCarSpeed_I = atof(vivalue);
 
-		UART3_Send_Char("$OK#"); //返回协议数据包
+		UART3_Send_Char("$OK#"); // 返回协议数据包
 	}
 
 	newLineReceived = 0;
@@ -945,7 +937,7 @@ void Protocol(void)
 void SysTick_Handler_ForUpstandingCar()
 {
 	if (!SquareEnable)
-	{	//收集6050转向角的初始数据，数据稳定需要很长时间
+	{ // 收集6050转向角的初始数据，数据稳定需要很长时间
 		UpdateCountNum(3500);
 		if (TimeToChangeNextStatus())
 		{
@@ -955,13 +947,21 @@ void SysTick_Handler_ForUpstandingCar()
 	}
 	else
 	{
-		//6050运行时间计数
+		// 6050运行时间计数
 		Tracing_MPU6050Count++;
 	}
 	if (SquareCountEnable)
 	{
-		//延迟池总计数
+		// 延迟池总计数
 		Tracing_Count++;
+	}
+	if (SquareReadyToStop)
+	{
+		SquareStopCar();
+	}
+	if (SquareStraight == 1 && SquareReadyToTurn == 0)
+	{
+		AddSpeed();
 	}
 }
 
@@ -969,17 +969,17 @@ void ControlCarDoDemo1(void)
 {
 	if (SquareEnable)
 	{
-		//转向结束后状态延迟
+		// 转向结束后状态延迟
 		if (SquareStraight == 0 && SquareTurn == 0)
 		{
-			UpdateCountNum(400);
+			UpdateCountNum(50);
 			SquareLastAngle = ControlCarDoDemoYaw();
 			if (TimeToChangeNextStatus())
 			{
 				SquareStraight = 1;
 			}
 		}
-		//直走
+		// 直走
 		if (SquareStraight == 1 && SquareTurn == 0)
 		{
 			SquareReadyToStraight = 0;
@@ -994,17 +994,17 @@ void ControlCarDoDemo1(void)
 			}
 			else
 			{
-				UpdateCountNum(70);
+				UpdateCountNum(480);
 				ChangeCarToStraight();
 				if (TimeToChangeNextStatus())
 				{
 					ChangeCarToStop();
-					UpdateCountNum(400);
+					UpdateCountNum(200);
 					SquareReadyToTurn = 1;
 				}
 			}
 		}
-		//转弯
+		// 转弯
 		if (SquareStraight == 0 && SquareTurn == 1)
 		{
 			SquareReadyToTurn = 0;
@@ -1019,11 +1019,11 @@ void ControlCarDoDemo1(void)
 			}
 			else
 			{
-				if (ControlCarDoDemoGetDiffAngle() > 89.0)
+				if (ControlCarDoDemoGetDiffAngle() > 87.0)
 				{
 					SquareReadyToStraight = 1;
 					ChangeCarToStop();
-					UpdateCountNum(400);
+					UpdateCountNum(200);
 				}
 				else
 				{
@@ -1036,7 +1036,8 @@ void ControlCarDoDemo1(void)
 
 float ControlCarDoDemoYaw()
 {
-	return Yaw - MPU6050_Zero + (0.000023 * Tracing_MPU6050Count * 0.005);
+	return Yaw - MPU6050_Zero + (0.0000234 * Tracing_MPU6050Count * 0.005);
+	// return Yaw - MPU6050_Zero;
 }
 
 float ControlCarDoDemoGetDiffAngle()
@@ -1068,20 +1069,51 @@ float ControlCarDoDemoGetDiffAngle()
 
 void ChangeCarToStraight()
 {
-	Tracing_Speed = 400;
+	SquareReadyToStop = 0;
+	Tracing_SpeedPoor = 650;
 	Tracing_Direction = 0;
+}
+
+void AddSpeed()
+{
+	if (Tracing_Speed < Tracing_SpeedPoor)
+	{
+		Tracing_Speed += 5;
+	}
 }
 
 void ChangeCarToTurn()
 {
+	SquareReadyToStop = 0;
 	Tracing_Speed = 0;
-	Tracing_Direction = 400;
+	Tracing_SpeedPoor = 0;
+	Tracing_Direction = 200;
 }
 
 void ChangeCarToStop()
 {
-	Tracing_Speed = 0;
+	SquareReadyToStop = 1;
+	Tracing_SpeedPoor = 0;
 	Tracing_Direction = 0;
+}
+
+void SquareStopCar()
+{
+	if(Tracing_Speed > 0)
+	{
+		Tracing_Speed = Tracing_Speed -13;
+	}
+	if (SquareReadyToStraight)
+	{
+		if(BST_fCarSpeed > 0.0)
+		{
+			Tracing_Speed = -10;
+		}
+		else
+		{
+			Tracing_Speed = 10;
+		}
+	}
 }
 
 void UpdateCountNum(int count)
@@ -1122,7 +1154,6 @@ void ControlCarDoDemo2()
 			SquareReadyToStraight = 0;
 			if (SquareReadyToTurn)
 			{
-				SquareLastAngle = ControlCarDoDemoYaw();
 				if (TimeToChangeNextStatus())
 				{
 					SquareStraight = 0;
@@ -1131,12 +1162,12 @@ void ControlCarDoDemo2()
 			}
 			else
 			{
-				UpdateCountNum(50);
+				UpdateCountNum(800);
 				ChangeCarToStraight();
 				if (TimeToChangeNextStatus())
 				{
 					ChangeCarToStop();
-					UpdateCountNum(100);
+					UpdateCountNum(200);
 					SquareReadyToTurn = 1;
 				}
 			}
@@ -1146,7 +1177,6 @@ void ControlCarDoDemo2()
 			SquareReadyToTurn = 0;
 			if (SquareReadyToStraight)
 			{
-				SquareLastAngle = ControlCarDoDemoYaw();
 				if (TimeToChangeNextStatus())
 				{
 					SquareStraight = 0;
@@ -1155,7 +1185,7 @@ void ControlCarDoDemo2()
 			}
 			else
 			{
-				UpdateCountNum(210);
+				UpdateCountNum(150);
 				ChangeCarToTurn();
 				if (TimeToChangeNextStatus())
 				{

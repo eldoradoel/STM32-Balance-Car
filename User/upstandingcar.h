@@ -7,8 +7,7 @@
 
 
 /**********角度控制宏定义**********/									
-// #define    CAR_ZERO_ANGLE (-7.5)		 //初始小车车体结构导致小车存在垂直方向不为零角度的情况，固需要消除此误差，增加直立误差角度值。
-#define    CAR_ZERO_ANGLE (0.0)	
+#define    CAR_ZERO_ANGLE (-10.0)		 //初始小车车体结构导致小车存在垂直方向不为零角度的情况，固需要消除此误差，增加直立误差角度值。
 //-13.5
 /******速度控制相关宏定义******/
 #define CAR_POSITION_SET      0
@@ -45,7 +44,6 @@ extern float BST_fBluetoothDirectionL;
 extern u8 BST_u8MainEventCount;
 extern u8 BST_u8SpeedControlCount;
 extern int BST_speedtime;
-extern int Direction;
 extern int Speedset;
 extern float BST_fSpeedControlOut,BST_fCarAngle_P;
 extern float  BST_fAngleControlOut;
@@ -109,7 +107,9 @@ float ControlCarDoDemoGetDiffAngle(void);
 void ChangeCarToStraight(void);
 void ChangeCarToTurn(void);
 void ChangeCarToStop(void);
+void SquareStopCar(void);
 void UpdateCountNum(int count);
+void AddSpeed(void);
 uint8_t TimeToChangeNextStatus(void);
 
 #endif
